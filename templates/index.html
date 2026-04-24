@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Supply Chain Shield - Predictive Disruption Detection</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_key }}&libraries=geometry"></script>
+</head>
+<body>
+    <div class="dashboard">
+        <header class="header">
+            <h1>🚛 Supply Chain Shield</h1>
+            <div class="status">
+                <span id="system-status" class="status-live">● LIVE</span>
+                <span id="time-elapsed">Time: 0 min</span>
+            </div>
+        </header>
+
+        <main class="main-content">
+            <div id="map" class="map-container"></div>
+
+            <aside class="sidebar">
+                <section class="widget">
+                    <h3>Active Shipments</h3>
+                    <div id="shipment-list" class="shipment-list"></div>
+                </section>
+
+                <section class="widget">
+                    <h3>Risk Zones</h3>
+                    <div id="risk-list" class="risk-list"></div>
+                </section>
+
+                <section class="widget">
+                    <h3>System Metrics</h3>
+                    <div class="metrics">
+                        <div class="metric">
+                            <span class="metric-label">Predictions Made</span>
+                            <span id="predictions-count" class="metric-value">0</span>
+                        </div>
+                        <div class="metric">
+                            <span class="metric-label">Routes Optimized</span>
+                            <span id="reroutes-count" class="metric-value">0</span>
+                        </div>
+                    </div>
+                </section>
+            </aside>
+        </main>
+
+        <div id="alert-panel" class="alert-panel hidden">
+            <div class="alert-icon">⚠️</div>
+            <div class="alert-body">
+                <h3 id="alert-title">Disruption Detected</h3>
+                <p id="alert-cause"></p>
+                <p id="alert-confidence"></p>
+                <p id="alert-eta" class="eta"></p>
+                <div id="alert-action" class="alert-action"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/map.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/truck.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/risk.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

@@ -1,0 +1,44 @@
+{
+  "primary": {
+    "id": "primary",
+    "name": "Via Nehru Place",
+    "color": "#007AFF",
+    "waypoints": [
+      { "lat": 28.6315, "lng": 77.2167 },
+      { "lat": 28.636, "lng": 77.228 },
+      { "lat": 28.6186, "lng": 77.2393 },
+      { "lat": 28.591, "lng": 77.248 },
+      { "lat": 28.5707, "lng": 77.2592 },
+      { "lat": 28.5494, "lng": 77.2515 },
+      { "lat": 28.535, "lng": 77.265 }
+    ]
+  },
+  "alternate1": {
+    "id": "alternate1",
+    "name": "Via Mathura Road",
+    "color": "#34C759",
+    "waypoints": [
+      { "lat": 28.6315, "lng": 77.2167 },
+      { "lat": 28.63, "lng": 77.23 },
+      { "lat": 28.6118, "lng": 77.2192 },
+      { "lat": 28.589, "lng": 77.21 },
+      { "lat": 28.567, "lng": 77.21 },
+      { "lat": 28.555, "lng": 77.235 },
+      { "lat": 28.535, "lng": 77.265 }
+    ]
+  },
+  "alternate2": {
+    "id": "alternate2",
+    "name": "Via DND Flyway",
+    "color": "#FF9500",
+    "waypoints": [
+      { "lat": 28.6315, "lng": 77.2167 },
+      { "lat": 28.625, "lng": 77.245 },
+      { "lat": 28.594, "lng": 77.265 },
+      { "lat": 28.58, "lng": 77.275 },
+      { "lat": 28.565, "lng": 77.3 },
+      { "lat": 28.545, "lng": 77.295 },
+      { "lat": 28.535, "lng": 77.265 }
+    ]
+  }
+}

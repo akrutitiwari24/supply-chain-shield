@@ -1,0 +1,19 @@
+SUPPLY CHAIN SHIELD: 60-SECOND DEMO SCRIPT
+
+[00:00 - 00:05] OPENING
+"This is Supply Chain Shield. We use real-time data to predict traffic and weather disruptions before they stop our deliveries." [POINT to Header]
+
+[00:05 - 00:15] WATCH PHASE
+"Right now, you can see our active shipment moving through Delhi on the map. It's following Route Alpha, our standard path." [POINT to Truck Icon moving] [PAUSE]
+
+[00:15 - 00:25] RISK DETECTION
+"On the right, our system is scanning for trouble. These red and orange circles represent growing risks, like heavy traffic at Ashram Chowk." [POINT to Sidebar and Risk Circles]
+
+[00:25 - 00:35] ALERT
+"Wait—our predictor just flagged a critical delay. Look at the center screen: the system has issued an emergency alert." [POINT to Alert Popup]
+
+[00:35 - 00:45] REROUTE
+"Instead of getting stuck, the system is automatically switching our truck to Route Beta. You'll see the path change on the map right now." [POINT to Route change and Truck repositioning]
+
+[00:45 - 01:00] CLOSING
+"By solving problems before they happen, we’ve just saved 45 minutes of delay. This keeps our trucks moving and our customers happy. Thank you!" [POINT to Reroute Count metric]

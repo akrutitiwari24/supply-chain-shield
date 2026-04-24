@@ -1,0 +1,52 @@
+[
+  {
+    "id": "d1",
+    "name": "Nehru Place Junction",
+    "lat": 28.5494,
+    "lng": 77.2515,
+    "type": "congestion",
+    "delayRisk": 0.82,
+    "cause": "Metro Phase IV construction and high commuter volume during peak hours.",
+    "growthFactor": 0.14
+  },
+  {
+    "id": "d2",
+    "name": "Dhaula Kuan Interchange",
+    "lat": 28.5921,
+    "lng": 77.1581,
+    "type": "traffic",
+    "delayRisk": 0.68,
+    "cause": "Strategic bottleneck during airport transit peak hours and lane narrowing.",
+    "growthFactor": 0.09
+  },
+  {
+    "id": "d3",
+    "name": "Ashram Chowk Stretch",
+    "lat": 28.5707,
+    "lng": 77.2592,
+    "type": "congestion",
+    "delayRisk": 0.88,
+    "cause": "Heavy vehicle movement and ongoing flyover extension work.",
+    "growthFactor": 0.20
+  },
+  {
+    "id": "d4",
+    "name": "Minto Road Underpass",
+    "lat": 28.636,
+    "lng": 77.228,
+    "type": "weather",
+    "delayRisk": 0.45,
+    "cause": "High risk of localized waterlogging predicted due to pre-monsoon showers.",
+    "growthFactor": 0.05
+  },
+  {
+    "id": "d5",
+    "name": "IIT Flyover (Aurobindo Marg)",
+    "lat": 28.545,
+    "lng": 77.195,
+    "type": "traffic",
+    "delayRisk": 0.58,
+    "cause": "Frequent congestion at merge points and breakdown of freight vehicles.",
+    "growthFactor": 0.07
+  }
+]

@@ -1,0 +1,38 @@
+[
+  {
+    "id": "weather_1",
+    "type": "rain",
+    "intensity": 0.3,
+    "location": {
+      "lat": 28.6304,
+      "lng": 77.2177
+    },
+    "radius": 3000,
+    "startTime": 5,
+    "duration": 15
+  },
+  {
+    "id": "weather_2",
+    "type": "fog",
+    "intensity": 0.7,
+    "location": {
+      "lat": 28.5562,
+      "lng": 77.1000
+    },
+    "radius": 4000,
+    "startTime": 10,
+    "duration": 20
+  },
+  {
+    "id": "weather_3",
+    "type": "rain",
+    "intensity": 0.9,
+    "location": {
+      "lat": 28.5355,
+      "lng": 77.2410
+    },
+    "radius": 5000,
+    "startTime": 15,
+    "duration": 20
+  }
+]

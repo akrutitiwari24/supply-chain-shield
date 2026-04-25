@@ -5,18 +5,50 @@ class Truck {
     /**
      * @param {google.maps.Map} map - The Google Map instance
      * @param {Array} route - Array of LatLng literals to follow
-     * @param {string} iconUrl - URL to the truck icon SVG or image
+     * @param {string} shipmentId - Identifier for the shipment
+     * @param {string} iconUrl - URL to the truck icon SVG or a priority string ('high', 'medium', 'low')
      */
-    constructor(map, route, iconUrl = '/static/assets/truck-icon.svg') {
+    constructor(map, route, shipmentId = 'Unknown', iconUrl = 'high') {
         this.map = map;
         this.route = route;
+        this.shipmentId = shipmentId;
         this.positionIndex = 0;
         this.active = true;
         this.rerouted = false;
         this.interval = null;
 
-        this.createMarker(iconUrl);
+        // Determine if iconUrl is a priority string, if so generate the color-coded SVG
+        let finalIconUrl = iconUrl;
+        if (['high', 'medium', 'low'].includes(iconUrl.toLowerCase())) {
+            finalIconUrl = this.generateIcon(iconUrl.toLowerCase());
+        }
+
+        this.createMarker(finalIconUrl);
         this.startMoving();
+    }
+
+    /**
+     * Generates a dynamic SVG truck icon based on priority color.
+     * @param {string} priority - 'high', 'medium', or 'low'
+     * @returns {string} Data URI of the SVG
+     */
+    generateIcon(priority) {
+        let color = '#FFD60A'; // High: Yellow
+        if (priority === 'medium') color = '#0A84FF'; // Medium: Blue
+        if (priority === 'low') color = '#34C759'; // Low: Green
+
+        const svg = `<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="4" y="14" width="22" height="14" rx="1" fill="${color}" stroke="black" stroke-width="1.5"/>
+          <rect x="25" y="18" width="10" height="10" rx="2" fill="${color}" stroke="black" stroke-width="1.5"/>
+          <rect x="29" y="20" width="4" height="4" rx="1" fill="white" stroke="black" stroke-width="1"/>
+          <line x1="35" y1="26" x2="36" y2="26" stroke="black" stroke-width="2"/>
+          <circle cx="10" cy="32" r="3.5" fill="#333" stroke="black" stroke-width="1.5"/>
+          <circle cx="30" cy="32" r="3.5" fill="#333" stroke="black" stroke-width="1.5"/>
+          <circle cx="10" cy="32" r="1" fill="white"/>
+          <circle cx="30" cy="32" r="1" fill="white"/>
+        </svg>`;
+        
+        return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
     }
 
     /**
@@ -32,7 +64,7 @@ class Truck {
                 scaledSize: new google.maps.Size(40, 40),
                 rotation: 0
             },
-            title: 'Active Shipment'
+            title: 'Active Shipment: ' + this.shipmentId
         });
     }
 
@@ -63,7 +95,14 @@ class Truck {
         let frame = 0;
         const totalFrames = 20;
 
-        this.interval = setInterval(() => {
+        const tick = () => {
+            if (!this.active) return;
+            
+            if (window.isPaused) {
+                this.interval = setTimeout(tick, 100);
+                return;
+            }
+
             if (this.positionIndex < this.route.length - 1) {
                 const startPoint = this.route[this.positionIndex];
                 const endPoint = this.route[this.positionIndex + 1];
@@ -96,14 +135,20 @@ class Truck {
                     
                     // Hook to notify map or main logic that truck has reached next node
                     if (window.onTruckMove) {
-                        window.onTruckMove(this.positionIndex, this.route[this.positionIndex]);
+                        window.onTruckMove(this.shipmentId, this.positionIndex, this.route[this.positionIndex]);
                     }
                 }
             } else {
                 // Route complete
                 this.stop();
+                return; // Prevent further ticks
             }
-        }, 100); // 100ms interval for smoother movement
+            
+            const speed = window.playbackSpeed || 1;
+            this.interval = setTimeout(tick, 100 / speed);
+        };
+        
+        this.interval = setTimeout(tick, 100);
     }
 
     /**

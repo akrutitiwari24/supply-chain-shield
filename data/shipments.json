@@ -1,0 +1,35 @@
+[
+  {
+    "id": "shipment_1",
+    "origin": "Okhla Industrial Estate",
+    "destination": "Connaught Place",
+    "status": "in_transit",
+    "driver": "Rajesh Kumar",
+    "cargo": "Medical Supplies",
+    "routeId": "primary",
+    "startTime": 0,
+    "priority": "high"
+  },
+  {
+    "id": "shipment_2",
+    "origin": "Mayapuri Industrial Area",
+    "destination": "Nehru Place",
+    "status": "on_time",
+    "driver": "Sandeep Singh",
+    "cargo": "Electronics",
+    "routeId": "alternate1",
+    "startTime": 300,
+    "priority": "medium"
+  },
+  {
+    "id": "shipment_3",
+    "origin": "Patparganj Industrial Area",
+    "destination": "Dwarka Sector 21",
+    "status": "in_transit",
+    "driver": "Amit Sharma",
+    "cargo": "Food Items",
+    "routeId": "alternate2",
+    "startTime": 600,
+    "priority": "low"
+  }
+]

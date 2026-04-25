@@ -13,9 +13,28 @@
             <h1>🚛 Supply Chain Shield</h1>
             <div class="status">
                 <span id="system-status" class="status-live">● LIVE</span>
+                <span id="data-mode" class="status-mode">🔴 Real-Time Data</span>
                 <span id="time-elapsed">Time: 0 min</span>
+                <span id="last-update" class="status-update">Updated: just now</span>
+                <button id="mode-toggle" class="control-btn" style="background:#2a3555; border:1px solid #3a4565;">Switch to Simulated</button>
+                <button id="generate-report-btn" class="report-btn">📄 Generate Report</button>
             </div>
         </header>
+
+        <div class="timeline-controls">
+          <button id="play-pause-btn" class="control-btn">⏸ Pause</button>
+          <div class="timeline-slider">
+            <input type="range" id="timeline-slider" min="0" max="30" value="0" step="1">
+            <span id="timeline-label">0 min</span>
+          </div>
+          <button id="restart-btn" class="control-btn">🔄 Restart</button>
+          <select id="speed-control" class="control-select">
+            <option value="0.5">0.5x</option>
+            <option value="1" selected>1x</option>
+            <option value="2">2x</option>
+            <option value="4">4x</option>
+          </select>
+        </div>
 
         <main class="main-content">
             <div id="map" class="map-container"></div>
@@ -44,6 +63,33 @@
                         </div>
                     </div>
                 </section>
+
+                <div class="widget">
+                  <h3>Live Analytics</h3>
+                  <div class="analytics">
+                    <div class="analytic-item">
+                      <span class="analytic-icon">⚡</span>
+                      <div class="analytic-content">
+                        <span class="analytic-label">Avg Delay Saved</span>
+                        <span id="avg-delay-saved" class="analytic-value">0 min</span>
+                      </div>
+                    </div>
+                    <div class="analytic-item">
+                      <span class="analytic-icon">🎯</span>
+                      <div class="analytic-content">
+                        <span class="analytic-label">Prediction Accuracy</span>
+                        <span id="prediction-accuracy" class="analytic-value">0%</span>
+                      </div>
+                    </div>
+                    <div class="analytic-item">
+                      <span class="analytic-icon">💰</span>
+                      <div class="analytic-content">
+                        <span class="analytic-label">Cost Savings</span>
+                        <span id="cost-savings" class="analytic-value">₹0</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
             </aside>
         </main>
 
@@ -53,15 +99,17 @@
                 <h3 id="alert-title">Disruption Detected</h3>
                 <p id="alert-cause"></p>
                 <p id="alert-confidence"></p>
-                <p id="alert-eta" class="eta"></p>
+                <div id="alert-eta" class="eta"></div>
                 <div id="alert-action" class="alert-action"></div>
             </div>
         </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
     <script src="{{ url_for('static', filename='js/map.js') }}"></script>
     <script src="{{ url_for('static', filename='js/truck.js') }}"></script>
     <script src="{{ url_for('static', filename='js/risk.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/report.js') }}"></script>
     <script src="{{ url_for('static', filename='js/main.js') }}"></script>
 </body>
 </html>

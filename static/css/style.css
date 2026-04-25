@@ -137,6 +137,43 @@ body {
     gap: 0.75rem;
 }
 
+.shipment-item {
+    background: #232b47;
+    border-radius: 8px;
+    padding: 0.75rem;
+    margin-bottom: 0.75rem;
+    border-left: 3px solid;
+}
+
+.shipment-item.priority-high { border-color: #FFD60A; }
+.shipment-item.priority-medium { border-color: #007AFF; }
+.shipment-item.priority-low { border-color: #34C759; }
+
+.shipment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.shipment-id {
+    font-weight: 600;
+    font-size: 0.9rem;
+}
+
+.shipment-status {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.shipment-details {
+    font-size: 0.85rem;
+    color: #9ca3af;
+    line-height: 1.4;
+}
+
 /* Metric Styles */
 .metrics {
     display: grid;
@@ -236,4 +273,206 @@ body {
 
 .sidebar::-webkit-scrollbar-thumb:hover {
     background: var(--text-secondary);
+}
+
+.analytics {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.analytic-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  background: #232b47;
+  border-radius: 8px;
+}
+
+.analytic-icon {
+  font-size: 1.5rem;
+}
+
+.analytic-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.analytic-label {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  margin-bottom: 0.25rem;
+}
+
+.analytic-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #8ec3b9;
+}
+
+@keyframes pulse-risk {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 0.45; }
+}
+
+.timeline-controls {
+  background: #1a1f3a;
+  padding: 1rem 2rem;
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  border-bottom: 2px solid #2a3555;
+}
+
+.control-btn {
+  background: #2a3555;
+  border: none;
+  color: #e0e6ed;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.9rem;
+  transition: background 0.2s;
+}
+
+.control-btn:hover {
+  background: #3a4565;
+}
+
+.timeline-slider {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+#timeline-slider {
+  flex: 1;
+  height: 6px;
+  border-radius: 3px;
+  background: #2a3555;
+  outline: none;
+  -webkit-appearance: none;
+}
+
+#timeline-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #8ec3b9;
+  cursor: pointer;
+}
+
+#timeline-label {
+  font-size: 0.9rem;
+  min-width: 60px;
+  color: #8ec3b9;
+}
+
+.control-select {
+  background: #2a3555;
+  border: none;
+  color: #e0e6ed;
+  padding: 0.5rem;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.predictive-timeline {
+    margin-top: 1rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    border-left: 2px solid #3a4565;
+    padding-left: 1rem;
+    margin-left: 0.5rem;
+}
+
+.predictive-timeline h4 {
+    margin: 0 0 0.5rem -1rem;
+    font-size: 0.85rem;
+    color: #9ca3af;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.timeline-step {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.5rem;
+    font-size: 0.85rem;
+    position: relative;
+}
+
+.timeline-step::before {
+    content: '';
+    position: absolute;
+    left: -1.35rem;
+    top: 0.25rem;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #3a4565;
+}
+
+.step-yellow { color: #FFD60A; }
+.step-yellow::before { background: #FFD60A; box-shadow: 0 0 8px #FFD60A; }
+
+.step-orange { color: #FF9500; }
+.step-orange::before { background: #FF9500; box-shadow: 0 0 8px #FF9500; }
+
+.step-red { color: #FF3B30; }
+.step-red::before { background: #FF3B30; box-shadow: 0 0 8px #FF3B30; }
+
+.step-darkred { color: #cc2b22; font-weight: 600; }
+.step-darkred::before { background: #cc2b22; box-shadow: 0 0 8px #cc2b22; }
+
+.step-icon {
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.step-text {
+    line-height: 1.3;
+}
+
+.report-btn {
+  background: #8ec3b9;
+  border: none;
+  color: #1a1f3a;
+  padding: 0.4rem 0.8rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 600;
+  transition: opacity 0.2s;
+  margin-left: 1rem;
+}
+
+.report-btn:hover {
+  opacity: 0.8;
+}
+
+.status-mode {
+  background: rgba(255, 59, 48, 0.2);
+  padding: 0.25rem 0.75rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  border: 1px solid #FF3B30;
+  color: #FF3B30;
+}
+
+.status-mode.simulated {
+  background: rgba(255, 149, 0, 0.2);
+  border-color: #FF9500;
+  color: #FF9500;
+}
+
+.status-update {
+  font-size: 0.8rem;
+  color: #9ca3af;
+  min-width: 120px;
 }

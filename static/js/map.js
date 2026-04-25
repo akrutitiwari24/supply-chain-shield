@@ -18,7 +18,19 @@ function initializeMap() {
     };
     
     map = new google.maps.Map(document.getElementById('map'), mapOptions);
+    enableTrafficLayer();
     return map;
+}
+
+/**
+ * Enables the Google Maps Traffic Layer to show real-time traffic conditions.
+ * Green = fast, Yellow = medium, Red = slow, Dark red = very slow.
+ * @returns {google.maps.TrafficLayer} The created traffic layer
+ */
+function enableTrafficLayer() {
+  const trafficLayer = new google.maps.TrafficLayer();
+  trafficLayer.setMap(map);
+  return trafficLayer;
 }
 
 /**
@@ -130,3 +142,4 @@ window.drawRoute = drawRoute;
 window.clearPolylines = clearPolylines;
 window.drawRiskCircle = drawRiskCircle;
 window.clearRiskCircles = clearRiskCircles;
+window.enableTrafficLayer = enableTrafficLayer;

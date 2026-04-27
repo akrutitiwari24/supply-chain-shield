@@ -16,10 +16,27 @@
                 <span id="data-mode" class="status-mode">🔴 Real-Time Data</span>
                 <span id="time-elapsed">Time: 0 min</span>
                 <span id="last-update" class="status-update">Updated: just now</span>
-                <button id="mode-toggle" class="control-btn" style="background:#2a3555; border:1px solid #3a4565;">Switch to Simulated</button>
                 <button id="generate-report-btn" class="report-btn">📄 Generate Report</button>
             </div>
         </header>
+
+        <div class="mode-switcher">
+          <button id="mode-demo" class="mode-btn">
+            <span class="mode-icon">🎬</span>
+            <span class="mode-text">Demo Mode</span>
+            <small class="mode-desc">Fast playback, simulated</small>
+          </button>
+          <button id="mode-realtime" class="mode-btn">
+            <span class="mode-icon">🔴</span>
+            <span class="mode-text">Real-Time</span>
+            <small class="mode-desc">Live traffic & weather</small>
+          </button>
+          <button id="mode-prediction" class="mode-btn">
+            <span class="mode-icon">🔮</span>
+            <span class="mode-text">Prediction</span>
+            <small class="mode-desc">Future state routing</small>
+          </button>
+        </div>
 
         <div class="timeline-controls">
           <button id="play-pause-btn" class="control-btn">⏸ Pause</button>
@@ -28,6 +45,8 @@
             <span id="timeline-label">0 min</span>
           </div>
           <button id="restart-btn" class="control-btn">🔄 Restart</button>
+          <button id="debug-zones" class="control-btn">🔍 Show Risk Zones</button>
+          <button id="detect-bottlenecks" class="control-btn">🚨 Detect Bottlenecks</button>
           <select id="speed-control" class="control-select">
             <option value="0.5">0.5x</option>
             <option value="1" selected>1x</option>
@@ -44,6 +63,29 @@
                     <h3>Active Shipments</h3>
                     <div id="shipment-list" class="shipment-list"></div>
                 </section>
+
+                <div class="widget">
+                  <h3>🔮 Time-Shifted Analysis</h3>
+                  <div id="time-shift-panel">
+                    <div class="time-comparison">
+                      <div class="route-option">
+                        <div class="route-label">Current Best</div>
+                        <div class="route-name" id="current-best-route">Calculating...</div>
+                        <div class="route-time" id="current-time">-- min</div>
+                      </div>
+                      <div class="vs-divider">VS</div>
+                      <div class="route-option highlighted">
+                        <div class="route-label">Future Best</div>
+                        <div class="route-name" id="future-best-route">Calculating...</div>
+                        <div class="route-time" id="future-time">-- min</div>
+                      </div>
+                    </div>
+                    <div class="insight-box">
+                      <span class="insight-icon">💡</span>
+                      <p id="routing-insight">Waiting for predictive analysis results...</p>
+                    </div>
+                  </div>
+                </div>
 
                 <section class="widget">
                     <h3>Risk Zones</h3>
@@ -90,6 +132,75 @@
                     </div>
                   </div>
                 </div>
+                <div class="widget">
+                  <h3>🕸️ Cascade Impact Analysis</h3>
+                  <div id="cascade-sidebar-panel">
+                    <div class="cascade-summary">
+                      <div class="cascade-item">
+                        <span class="label">Total Affected</span>
+                        <span id="cascade-total" class="value">--</span>
+                      </div>
+                      <div class="cascade-item">
+                        <span class="label">Financial Impact</span>
+                        <span id="cascade-cost" class="value danger">--</span>
+                      </div>
+                    </div>
+                    
+                    <div class="cascade-steps">
+                      <div class="cascade-step">
+                        <span class="step-badge direct">Direct</span>
+                        <span id="cascade-direct-text" class="step-text">-- shipments on route</span>
+                      </div>
+                      <div class="cascade-step">
+                        <span class="badge-connector"></span>
+                        <span class="step-badge secondary">Secondary</span>
+                        <span id="cascade-secondary-text" class="step-text">-- diverted trucks</span>
+                      </div>
+                      <div class="cascade-step">
+                        <span class="badge-connector"></span>
+                        <span class="step-badge tertiary">Tertiary</span>
+                        <span id="cascade-tertiary-text" class="step-text">-- warehouse delays</span>
+                      </div>
+                    </div>
+
+                    <div class="mitigation-box">
+                      <h4>Suggested Mitigations:</h4>
+                      <ul id="mitigation-list">
+                        <li>Calculating system interventions...</li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+                <div class="widget">
+                  <h3>🤖 Autonomous Agent</h3>
+                  
+                  <div class="agent-status">
+                    <div class="status-indicator active"></div>
+                    <span>Agent Active - Monitoring shipments</span>
+                  </div>
+                  
+                  <div class="agent-feed" id="agent-activity">
+                    <!-- Populated by JS with agent actions -->
+                  </div>
+                  
+                  <div class="agent-stats">
+                    <div class="stat-item">
+                      <span class="stat-label">Auto-Reroutes</span>
+                      <span id="auto-reroutes-count" class="stat-value">0</span>
+                    </div>
+                    <div class="stat-item">
+                      <span class="stat-label">Disruptions Avoided</span>
+                      <span id="disruptions-avoided" class="stat-value">0</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="widget">
+                  <h3>💡 AI Insights</h3>
+                  <div id="ai-insight" class="insight-box">
+                    <p id="insight-text" style="font-size: 0.9rem; line-height: 1.4; color: #4b5563; font-style: italic;">Analyzing network patterns...</p>
+                  </div>
+                </div>
             </aside>
         </main>
 
@@ -103,6 +214,58 @@
                 <div id="alert-action" class="alert-action"></div>
             </div>
         </div>
+    </div>
+
+    <!-- CASCADE BACKDROP -->
+    <div id="cascade-backdrop" class="cascade-backdrop"></div>
+
+    <!-- CASCADE OVERLAY PANEL -->
+    <div id="cascade-panel" class="cascade-panel hidden">
+      <div class="cascade-header">
+        <h3>⚡ Cascade Impact Analysis</h3>
+        <button id="close-cascade" class="close-btn">✕</button>
+      </div>
+
+      <div class="cascade-tree">
+        <div class="cascade-level level-1">
+          <div class="level-label">Direct Impact</div>
+          <div id="cascade-direct" class="impact-items"></div>
+        </div>
+
+        <div class="cascade-arrow">↓</div>
+
+        <div class="cascade-level level-2">
+          <div class="level-label">Secondary Effects</div>
+          <div id="cascade-secondary" class="impact-items"></div>
+        </div>
+
+        <div class="cascade-arrow">↓</div>
+
+        <div class="cascade-level level-3">
+          <div class="level-label">System-Wide Impact</div>
+          <div id="cascade-tertiary" class="impact-items"></div>
+        </div>
+      </div>
+
+      <div class="cascade-overlay-summary">
+        <div class="summary-stat">
+          <span class="stat-label">Total Affected</span>
+          <span id="total-affected" class="stat-value">0</span>
+        </div>
+        <div class="summary-stat">
+          <span class="stat-label">Accumulated Delay</span>
+          <span id="total-delay" class="stat-value">0 min</span>
+        </div>
+        <div class="summary-stat">
+          <span class="stat-label">Financial Impact</span>
+          <span id="financial-impact" class="stat-value">₹0</span>
+        </div>
+      </div>
+
+      <div class="mitigation-actions">
+        <h4>🛡️ Recommended Actions</h4>
+        <div id="mitigation-list-overlay"></div>
+      </div>
     </div>
 
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>

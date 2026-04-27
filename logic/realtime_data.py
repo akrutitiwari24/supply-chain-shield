@@ -1,6 +1,7 @@
 import os
 import requests
-from datetime import datetime
+import datetime
+from datetime import timedelta
 from geopy.distance import geodesic
 
 class RealTimeDataFetcher:
@@ -252,3 +253,120 @@ class RealTimeDataFetcher:
                 "cause": "Moderate conditions",
                 "confidence": 50
             }
+
+    def get_advanced_routes(self, origin_lat, origin_lng, dest_lat, dest_lng, departure_time_offset=0):
+        """
+        Use NEW Google Routes API (v2) with future traffic prediction.
+        """
+        url = "https://routes.googleapis.com/directions/v2:computeRoutes"
+        
+        # Calculate departure time (UTC ISO format)
+        departure = datetime.datetime.now(datetime.timezone.utc) + timedelta(minutes=departure_time_offset)
+        
+        headers = {
+            'Content-Type': 'application/json',
+            'X-Goog-Api-Key': self.google_api_key,
+            'X-Goog-FieldMask': 'routes.duration,routes.distanceMeters,routes.polyline,routes.legs,routes.travelAdvisory'
+        }
+        
+        body = {
+            'origin': {
+                'location': {
+                    'latLng': {
+                        'latitude': origin_lat,
+                        'longitude': origin_lng
+                    }
+                }
+            },
+            'destination': {
+                'location': {
+                    'latLng': {
+                        'latitude': dest_lat,
+                        'longitude': dest_lng
+                    }
+                }
+            },
+            'travelMode': 'DRIVE',
+            'routingPreference': 'TRAFFIC_AWARE_OPTIMAL',
+            'departureTime': departure.isoformat().replace('+00:00', 'Z'),
+            'computeAlternativeRoutes': True,
+            'routeModifiers': {
+                'avoidTolls': False,
+                'avoidHighways': False,
+                'avoidFerries': True
+            }
+        }
+        
+        try:
+            response = requests.post(url, json=body, headers=headers, timeout=10)
+            
+            if response.status_code == 200:
+                data = response.json()
+                routes = []
+                
+                for route in data.get('routes', []):
+                    # Parse polyline
+                    encoded_polyline = route.get('polyline', {}).get('encodedPolyline', '')
+                    waypoints = self.decode_polyline(encoded_polyline)
+                    
+                    # Get traffic advisory
+                    advisory = route.get('travelAdvisory', {})
+                    
+                    # Parse duration (format is "1234s")
+                    duration_str = route.get('duration', '0s')
+                    duration_val = int(duration_str[:-1]) if duration_str.endswith('s') else 0
+                    
+                    routes.append({
+                        'waypoints': waypoints,
+                        'duration': duration_val,
+                        'distance': route.get('distanceMeters', 0),
+                        'traffic_speed': advisory.get('speedReadingIntervals', []),
+                        'toll_info': advisory.get('tollInfo', {}),
+                        'summary': f"Advanced Route ({round(duration_val/60)} min)"
+                    })
+                
+                return routes
+            else:
+                print(f"Routes API Error: {response.status_code} - {response.text}")
+        except Exception as e:
+            print(f"Routes API exception: {e}")
+            
+        return []
+
+    def decode_polyline(self, encoded):
+        """Decode Google polyline to lat/lng points using standard algorithm."""
+        points = []
+        index = 0
+        lat = 0
+        lng = 0
+        
+        while index < len(encoded):
+            result = 1
+            shift = 0
+            while True:
+                b = ord(encoded[index]) - 63 - 1
+                index += 1
+                result += b << shift
+                shift += 5
+                if b < 0x1f:
+                    break
+            lat += (~result >> 1) if (result & 1) != 0 else (result >> 1)
+            
+            result = 1
+            shift = 0
+            while True:
+                b = ord(encoded[index]) - 63 - 1
+                index += 1
+                result += b << shift
+                shift += 5
+                if b < 0x1f:
+                    break
+            lng += (~result >> 1) if (result & 1) != 0 else (result >> 1)
+            
+            points.append({
+                'lat': lat / 1e5,
+                'lng': lng / 1e5
+            })
+        
+        return points
+

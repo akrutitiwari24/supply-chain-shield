@@ -23,7 +23,7 @@ const CONFIG = {
 };
 
 // Global Variables
-let REALTIME_MODE = (CONFIG.mode === 'realtime' || CONFIG.mode === 'hybrid'); 
+let REALTIME_MODE = (CONFIG.mode === 'realtime' || CONFIG.mode === 'hybrid' || CONFIG.mode === 'prediction'); 
 let lastSuccessfulUpdate = Date.now();
 let trucks = [];
 let allRoutes = [];
@@ -31,6 +31,7 @@ let shipments = [];
 let isPaused = false;
 let playbackSpeed = 1;
 let timelineInterval;
+window.timeElapsed = 0; // Initialize global time counter
 window.isPaused = isPaused;
 window.playbackSpeed = playbackSpeed;
 
@@ -80,91 +81,40 @@ async function initializeApp() {
             }
         });
         
-        // Add toggle button in UI
-        const timelineControls = document.querySelector('.timeline-controls');
-        if (timelineControls) {
-            const btnLabel = REALTIME_MODE ? '🔴 LIVE MODE' : '📊 DEMO MODE';
-            const btnColor = REALTIME_MODE ? '#dc3545' : '#6c757d';
-            
-            timelineControls.insertAdjacentHTML('afterbegin', `<button id="realtime-toggle" class="control-btn" style="background:${btnColor};color:white;font-weight:bold;margin-right:10px;">${btnLabel}</button>`);
-            const btn = document.getElementById('realtime-toggle');
-            btn.addEventListener('click', () => {
-                REALTIME_MODE = !REALTIME_MODE;
-                btn.textContent = REALTIME_MODE ? '🔴 LIVE MODE' : '📊 DEMO MODE';
-                btn.style.background = REALTIME_MODE ? '#dc3545' : '#6c757d';
-                
-                if (window.riskMonitorTimer) clearTimeout(window.riskMonitorTimer);
-                window.fetchRisks(REALTIME_MODE ? 'realtime' : 'simulated');
-                
-                const dataModeEl = document.getElementById('data-mode');
-                if (dataModeEl) {
-                    dataModeEl.textContent = REALTIME_MODE ? '🔴 Real-Time Data' : '📊 Simulated Data';
-                    dataModeEl.classList.toggle('simulated', !REALTIME_MODE);
-                }
-                
-                startRiskMonitoringLoop();
-            });
-        }
+        // Remove old toggle injection
+        // ... (skipped)
         
-        // Setup Event Listeners for Timeline Controls
-        document.getElementById('play-pause-btn').addEventListener('click', () => {
-            isPaused = !isPaused;
-            window.isPaused = isPaused;
-            document.getElementById('play-pause-btn').textContent = isPaused ? '▶ Play' : '⏸ Pause';
-        });
-
-        document.getElementById('restart-btn').addEventListener('click', () => {
-            window.timeElapsed = 0;
-            if (window.resetRiskState) window.resetRiskState();
-            
-            // Reset all trucks to start
-            trucks.forEach(truck => {
-                truck.positionIndex = 0;
-                if (truck.route && truck.route.length > 0) {
-                    truck.marker.setPosition(truck.route[0]);
-                }
-            });
-            // Clear alert
-            const alertPanel = document.getElementById('alert-panel');
-            if (alertPanel) alertPanel.classList.add('hidden');
-            
-            const slider = document.getElementById('timeline-slider');
-            const sliderLabel = document.getElementById('timeline-label');
-            if (slider && sliderLabel) {
-                slider.value = 0;
-                sliderLabel.textContent = '0 min';
-            }
-        });
-
-        document.getElementById('speed-control').addEventListener('change', (e) => {
-            playbackSpeed = parseFloat(e.target.value);
-            window.playbackSpeed = playbackSpeed;
-            // Restart intervals with new speed
-            clearInterval(timelineInterval);
-            startTimeCounter();
-        });
-
-        document.getElementById('timeline-slider').addEventListener('input', (e) => {
-            window.timeElapsed = parseInt(e.target.value);
-            // Update display
-            document.getElementById('timeline-label').textContent = window.timeElapsed + ' min';
-            window.fetchRisks(); // Force update risk on slider drag
-        });
-        
-        document.getElementById('generate-report-btn').addEventListener('click', generatePDFReport);
-        
-        const modeToggle = document.getElementById('mode-toggle');
-        if (modeToggle) {
-            modeToggle.textContent = CONFIG.mode === 'simulated' ? 'Switch to Real-Time' : 'Switch to Simulated';
-            modeToggle.addEventListener('click', () => {
-                const nextMode = CONFIG.mode === 'simulated' ? 'hybrid' : 'simulated';
-                localStorage.setItem('appMode', nextMode);
-                location.reload();
-            });
-        }
-
+        setupEventListeners();
         startRiskMonitoring();
         startTimeCounter();
+        
+        // DEBUG: Force test visualization after map loads
+        setTimeout(() => {
+            if (window.testRiskVisualization) window.testRiskVisualization();
+        }, 2000);
+        
+        // Manual Debug Button
+        const debugBtn = document.getElementById('debug-zones');
+        if (debugBtn) {
+            debugBtn.addEventListener('click', () => {
+                if (window.updateRiskVisualization) {
+                    window.updateRiskVisualization();
+                    alert(`Drew ${window.circles ? window.circles.length : 0} risk zones. Check map!`);
+                }
+            });
+        }
+
+        // Bottleneck Detection
+        const bottleneckBtn = document.getElementById('detect-bottlenecks');
+        if (bottleneckBtn) {
+            bottleneckBtn.addEventListener('click', () => {
+                detectBottlenecks();
+            });
+        }
+
+        // AI Insights polling
+        updateAIInsight();
+        setInterval(updateAIInsight, 30000);
 
         // Refresh the 'Updated: X seconds ago' timer every second
         setInterval(() => {
@@ -177,6 +127,80 @@ async function initializeApp() {
         
     } catch (err) {
         console.error("Critical error during application initialization:", err);
+        // CRITICAL FALLBACK: Ensure controls work even if data fetch fails
+        setupEventListeners();
+        startTimeCounter();
+        startRiskMonitoring();
+    }
+}
+
+/**
+ * Attaches all event listeners for UI controls.
+ * Safely checks for element existence to prevent script crashes.
+ */
+function setupEventListeners() {
+    const playPauseBtn = document.getElementById('play-pause-btn');
+    if (playPauseBtn) {
+        playPauseBtn.onclick = () => {
+            isPaused = !isPaused;
+            window.isPaused = isPaused;
+            playPauseBtn.textContent = isPaused ? '▶ Play' : '⏸ Pause';
+            console.log('Simulation', isPaused ? 'Paused' : 'Resumed');
+        };
+    }
+
+    const restartBtn = document.getElementById('restart-btn');
+    if (restartBtn) {
+        restartBtn.onclick = () => {
+            window.timeElapsed = 0;
+            trucks.forEach(t => t.positionIndex = 0);
+            const slider = document.getElementById('timeline-slider');
+            if (slider) slider.value = 0;
+            document.getElementById('time-elapsed').textContent = 'Time: 0 min';
+            console.log('Simulation Restarted');
+        };
+    }
+
+    const slider = document.getElementById('timeline-slider');
+    if (slider) {
+        slider.oninput = (e) => {
+            window.timeElapsed = parseInt(e.target.value);
+            document.getElementById('timeline-label').textContent = window.timeElapsed + ' min';
+            if (window.fetchRisks) window.fetchRisks(CONFIG.mode === 'simulated' ? 'simulated' : 'realtime');
+        };
+    }
+
+    const speedSelect = document.getElementById('speed-control');
+    if (speedSelect) {
+        speedSelect.onchange = (e) => {
+            playbackSpeed = parseFloat(e.target.value);
+            window.playbackSpeed = playbackSpeed;
+            clearInterval(timelineInterval);
+            startTimeCounter();
+        };
+    }
+
+    const reportBtn = document.getElementById('generate-report-btn');
+    if (reportBtn) reportBtn.onclick = () => { if (window.generatePDFReport) window.generatePDFReport(); };
+
+    // Mode Switchers
+    ['mode-demo', 'mode-realtime', 'mode-prediction'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) {
+            btn.onclick = () => {
+                const mode = id === 'mode-demo' ? 'simulated' : (id === 'mode-realtime' ? 'hybrid' : 'prediction');
+                localStorage.setItem('appMode', mode);
+                location.reload();
+            };
+        }
+    });
+
+    // Debug button
+    const debugBtn = document.getElementById('debug-zones');
+    if (debugBtn) {
+        debugBtn.onclick = () => {
+            if (window.updateRiskVisualization) window.updateRiskVisualization();
+        };
     }
 }
 
@@ -214,13 +238,189 @@ function updateShipmentList(shipmentsData) {
 }
 
 /**
+ * Fetches predictive routing data and updates the comparison widget.
+ */
+async function updateTimeShiftAnalysis() {
+    try {
+        const response = await fetch('/api/time-shift-routing', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                departure_time_offset: window.timeElapsed || 0
+            })
+        });
+        
+        if (!response.ok) return;
+        const data = await response.json();
+        
+        const routes = data.routes;
+        if (!routes || routes.length < 1) return;
+        
+        // Future Best is the first in the ranked list
+        const futureBest = routes[0];
+        
+        // Find current best (lowest current_travel_time)
+        const currentBest = [...routes].sort((a, b) => a.current_travel_time - b.current_travel_time)[0];
+        
+        // Update DOM
+        document.getElementById('current-best-route').textContent = currentBest.name;
+        document.getElementById('current-time').textContent = `${Math.round(currentBest.current_travel_time)} min`;
+        
+        document.getElementById('future-best-route').textContent = futureBest.name;
+        document.getElementById('future-time').textContent = `${Math.round(futureBest.predicted_travel_time)} min`;
+        
+        document.getElementById('routing-insight').textContent = data.explanation;
+        
+    } catch (err) {
+        console.warn('Error updating time-shift analysis:', err);
+    }
+}
+
+/**
+ * Fetches and displays AI-generated strategic insights using Google Gemini.
+ */
+async function updateAIInsight() {
+    console.log('🤖 Requesting AI insight...');
+    const insightText = document.getElementById('insight-text');
+    
+    try {
+        // Collect current state for context
+        const response = await fetch('/api/insight/route', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                route_data: {
+                    current_route: document.getElementById('current-best-route').textContent || "Primary Route",
+                    alternative_route: document.getElementById('future-best-route').textContent || "Predictive Route",
+                    current_eta: document.getElementById('current-time').textContent || "--",
+                    alternative_eta: document.getElementById('future-time').textContent || "--"
+                },
+                risk_data: {
+                    current_risks: "Moderate urban congestion patterns",
+                    alternative_risks: "Clear path via predictive model"
+                },
+                time_shift_data: {
+                    prediction: "Traffic expected to increase by 15% in next hour"
+                }
+            })
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            insightText.textContent = data.insight;
+            insightText.style.fontStyle = 'normal';
+            insightText.style.color = '#111827';
+        }
+    } catch (err) {
+        console.warn('AI Insight fetch failed:', err);
+        insightText.textContent = "Unable to reach AI strategist. Monitoring network status...";
+    }
+}
+
+/**
+ * Analyzes potential chain reactions and updates the cascade widget.
+ */
+async function updateCascadeAnalysis() {
+    try {
+        const response = await fetch('/api/cascade-analysis');
+        if (!response.ok) return;
+        
+        const data = await response.json();
+        const summary = data.summary;
+        
+        // Update Summary
+        document.getElementById('cascade-total').textContent = summary.total_affected;
+        document.getElementById('cascade-cost').textContent = summary.financial_impact;
+        
+        // Update Step Texts
+        document.getElementById('cascade-direct-text').textContent = `${summary.breakdown.direct} shipments on route`;
+        document.getElementById('cascade-secondary-text').textContent = `${summary.breakdown.secondary} diverted trucks`;
+        document.getElementById('cascade-tertiary-text').textContent = `${summary.breakdown.tertiary} warehouse delays`;
+        
+        // Update Mitigations
+        const list = document.getElementById('mitigation-list');
+        list.innerHTML = data.mitigations.map(m => `<li>${m}</li>`).join('');
+        
+    } catch (err) {
+        console.warn('Error updating cascade analysis:', err);
+    }
+}
+
+/**
+ * Periodically triggers the autonomous agent and updates the activity feed.
+ */
+async function updateAutonomousAgent() {
+    try {
+        // 1. Trigger agent to act
+        await fetch(`/api/autonomous-action?time=${window.timeElapsed || 0}`, { method: 'POST' });
+        
+        // 2. Fetch activity for feed
+        const response = await fetch('/api/agent-activity');
+        if (!response.ok) return;
+        
+        const data = await response.json();
+        const feed = document.getElementById('agent-activity');
+        if (!feed) return;
+        
+        // Update stats
+        const rerouteEl = document.getElementById('auto-reroutes-count');
+        const avoidedEl = document.getElementById('disruptions-avoided');
+        if (rerouteEl) rerouteEl.textContent = data.stats.reroutes;
+        if (avoidedEl) avoidedEl.textContent = data.stats.avoided;
+
+        // Check for new actions
+        const currentActionCount = feed.querySelectorAll('.agent-action').length;
+        if (data.actions.length > currentActionCount) {
+            // New actions found!
+            const newActions = data.actions.slice(0, data.actions.length - currentActionCount);
+            
+            newActions.reverse().forEach(action => {
+                const card = document.createElement('div');
+                card.className = `agent-action ${action.type.toLowerCase()}`;
+                card.innerHTML = `
+                    <div class="action-time">${action.timestamp}</div>
+                    <div class="action-icon">${action.icon}</div>
+                    <div class="action-text">${action.text}</div>
+                    <div class="action-confidence">Confidence: ${action.confidence}%</div>
+                `;
+                feed.prepend(card);
+                
+                // If it was a reroute, sync the UI (map + shipment list)
+                if (action.type === "REROUTE") {
+                    if (action.new_route && action.shipment_id) {
+                        const newRoute = allRoutes.find(r => r.name === action.new_route);
+                        if (newRoute && window.switchRoute) {
+                            window.switchRoute(action.shipment_id, newRoute);
+                        }
+                    }
+                    if (window.playSuccessSound) window.playSuccessSound();
+                }
+            });
+
+            // Limit feed size
+            while (feed.children.length > 10) {
+                feed.removeChild(feed.lastChild);
+            }
+        }
+    } catch (err) {
+        console.warn('Error updating autonomous agent:', err);
+    }
+}
+
+/**
  * Initiates the recurrent polling loop for live disruption data.
  */
 function startRiskMonitoringLoop() {
     const poll = () => {
-        window.fetchRisks(REALTIME_MODE ? 'realtime' : 'simulated');
-        lastSuccessfulUpdate = Date.now();
-        if (window.checkForHighRisk) window.checkForHighRisk();
+    const fetchMode = (CONFIG.mode === 'simulated') ? 'simulated' : 'realtime';
+    window.fetchRisks(fetchMode);
+    lastSuccessfulUpdate = Date.now();
+    if (window.checkForHighRisk) window.checkForHighRisk();
+    
+    // Update analysis widgets
+    updateTimeShiftAnalysis();
+    updateCascadeAnalysis();
+    updateAutonomousAgent();
         
         const count = document.getElementById('predictions-count');
         if (count) count.textContent = parseInt(count.textContent) + 1;
@@ -235,12 +435,21 @@ function startRiskMonitoringLoop() {
 
 function startRiskMonitoring() {
     console.log("Starting predictive risk monitoring service...");
-    window.fetchRisks(REALTIME_MODE ? 'realtime' : 'simulated'); 
+    const fetchMode = (CONFIG.mode === 'simulated') ? 'simulated' : 'realtime';
+    window.fetchRisks(fetchMode); 
+    
+    // Initial analysis
+    updateTimeShiftAnalysis();
+    updateCascadeAnalysis();
     
     startRiskMonitoringLoop();
     
     // Live Analytics polling
     setInterval(updateAnalytics, 5000);
+
+    // AI Strategic Insights polling
+    updateAIInsight();
+    setInterval(updateAIInsight, 30000);
     
     setTimeout(fetchWeatherOverlay, 3000);
     setInterval(fetchWeatherOverlay, CONFIG.update_intervals.weather);
@@ -282,7 +491,7 @@ async function fetchWeatherOverlay() {
  * Starts the central simulated time scale ticker.
  */
 function startTimeCounter() {
-    const intervalTime = 3000 / playbackSpeed;
+    const intervalTime = 1000 / playbackSpeed;
     
     timelineInterval = setInterval(() => {
         if (!isPaused) {
@@ -358,7 +567,68 @@ window.onTruckMove = function(shipmentId, posIndex, position) {
 // Starts application lifecycle on window load
 window.addEventListener('load', initializeApp);
 
-// Export for debugging potential scope issues
+let bottleneckMarkers = [];
+/**
+ * Detects nearby static urban bottlenecks and displays them on the map.
+ */
+async function detectBottlenecks() {
+    const center = window.map.getCenter();
+    const lat = center.lat();
+    const lng = center.lng();
+    
+    console.log(`Scanning for bottlenecks around ${lat}, ${lng}...`);
+    
+    try {
+        const response = await fetch(`/api/bottlenecks/${lat}/${lng}`);
+        if (!response.ok) throw new Error('Bottleneck API failed');
+        
+        const bottlenecks = await response.json();
+        
+        // Clear existing markers
+        bottleneckMarkers.forEach(m => m.setMap(null));
+        bottleneckMarkers = [];
+        
+        bottlenecks.forEach(b => {
+            const marker = new google.maps.Marker({
+                position: { lat: b.lat, lng: b.lng },
+                map: window.map,
+                icon: {
+                    path: google.maps.SymbolPath.BACKWARD_CLOSED_ARROW,
+                    scale: 5,
+                    fillColor: '#FF9500',
+                    fillOpacity: 1,
+                    strokeWeight: 2,
+                    strokeColor: '#FFFFFF'
+                },
+                title: b.name
+            });
+            
+            const infoWindow = new google.maps.InfoWindow({
+                content: `
+                    <div style="padding: 10px; color: #1a1f3a;">
+                        <h4 style="margin: 0;">${b.name}</h4>
+                        <p style="margin: 5px 0;"><b>Type:</b> ${b.type.replace('_', ' ')}</p>
+                        <p style="margin: 5px 0;"><b>Risk Factor:</b> ${Math.round(b.risk_factor * 100)}%</p>
+                        <p style="margin: 5px 0; font-size: 11px; color: #666;">Static bottleneck identified via Places API</p>
+                    </div>
+                `
+            });
+            
+            marker.addListener('click', () => {
+                infoWindow.open(window.map, marker);
+            });
+            
+            bottleneckMarkers.push(marker);
+        });
+        
+        alert(`Detected ${bottlenecks.length} potential bottlenecks in the current area.`);
+        
+    } catch (err) {
+        console.error('Error detecting bottlenecks:', err);
+    }
+}
+
+// Export for debugging
 window.trucks = trucks;
 window.allRoutes = allRoutes;
 

@@ -6,54 +6,42 @@ class Truck {
      * @param {google.maps.Map} map - The Google Map instance
      * @param {Array} route - Array of LatLng literals to follow
      * @param {string} shipmentId - Identifier for the shipment
-     * @param {string} iconUrl - URL to the truck icon SVG or a priority string ('high', 'medium', 'low')
+     * @param {string} priority - 'high', 'medium', or 'low'
      */
-    constructor(map, route, shipmentId = 'Unknown', iconUrl = 'high') {
+    constructor(map, route, shipmentId = 'Unknown', priority = 'medium') {
         this.map = map;
         this.route = route;
         this.shipmentId = shipmentId;
+        this.priority = priority.toLowerCase();
         this.positionIndex = 0;
         this.active = true;
         this.rerouted = false;
         this.interval = null;
+        this.trail = [];
+        this.trailLine = null;
+        this.currentSpeed = 0;
 
-        // Determine if iconUrl is a priority string, if so generate the color-coded SVG
-        let finalIconUrl = iconUrl;
-        if (['high', 'medium', 'low'].includes(iconUrl.toLowerCase())) {
-            finalIconUrl = this.generateIcon(iconUrl.toLowerCase());
-        }
-
-        this.createMarker(finalIconUrl);
+        const iconUrl = this.generateIcon(this.priority);
+        this.createMarker(iconUrl);
+        this.createTrail();
         this.startMoving();
+        this.addClickHandler();
     }
 
     /**
-     * Generates a dynamic SVG truck icon based on priority color.
-     * @param {string} priority - 'high', 'medium', or 'low'
-     * @returns {string} Data URI of the SVG
+     * Generates a visible emoji icon with drop shadow.
      */
-    generateIcon(priority) {
-        let color = '#FFD60A'; // High: Yellow
-        if (priority === 'medium') color = '#0A84FF'; // Medium: Blue
-        if (priority === 'low') color = '#34C759'; // Low: Green
-
-        const svg = `<svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <rect x="4" y="14" width="22" height="14" rx="1" fill="${color}" stroke="black" stroke-width="1.5"/>
-          <rect x="25" y="18" width="10" height="10" rx="2" fill="${color}" stroke="black" stroke-width="1.5"/>
-          <rect x="29" y="20" width="4" height="4" rx="1" fill="white" stroke="black" stroke-width="1"/>
-          <line x1="35" y1="26" x2="36" y2="26" stroke="black" stroke-width="2"/>
-          <circle cx="10" cy="32" r="3.5" fill="#333" stroke="black" stroke-width="1.5"/>
-          <circle cx="30" cy="32" r="3.5" fill="#333" stroke="black" stroke-width="1.5"/>
-          <circle cx="10" cy="32" r="1" fill="white"/>
-          <circle cx="30" cy="32" r="1" fill="white"/>
+    generateIcon() {
+        const svg = `
+        <svg xmlns="http://www.w3.org/2000/svg" width="60" height="60" viewBox="0 0 60 60">
+          <circle cx="30" cy="30" r="28" fill="#FFD60A" stroke="#000" stroke-width="3"/>
+          <text x="30" y="40" font-size="30" text-anchor="middle" fill="#000">🚛</text>
         </svg>`;
-        
         return 'data:image/svg+xml;charset=UTF-8,' + encodeURIComponent(svg);
     }
 
     /**
-     * Initializes the Google Maps marker at the starting position.
-     * @param {string} iconUrl - URL for the truck icon
+     * Initializes the marker and speed label.
      */
     createMarker(iconUrl) {
         this.marker = new google.maps.Marker({
@@ -61,43 +49,94 @@ class Truck {
             map: this.map,
             icon: {
                 url: iconUrl,
-                scaledSize: new google.maps.Size(40, 40),
-                rotation: 0
+                scaledSize: new google.maps.Size(60, 60),
+                anchor: new google.maps.Point(30, 30)
             },
-            title: 'Active Shipment: ' + this.shipmentId
+            label: {
+                text: this.shipmentId,
+                color: '#FFFFFF',
+                fontSize: '14px',
+                fontWeight: 'bold'
+            },
+            title: `Shipment: ${this.shipmentId}`,
+            zIndex: 100
+        });
+
+        // Add PULSING animation
+        this.marker.setAnimation(google.maps.Animation.BOUNCE);
+        setTimeout(() => this.marker.setAnimation(null), 2000);
+    }
+
+    /**
+     * Creates the initial trail polylines.
+     */
+    createTrail() {
+        const colorMap = { high: '#FF3B30', medium: '#007AFF', low: '#34C759' };
+        this.trailColor = colorMap[this.priority] || '#007AFF';
+    }
+
+    /**
+     * Adds interactivity to the truck.
+     */
+    addClickHandler() {
+        this.infoWindow = new google.maps.InfoWindow();
+        this.marker.addListener('click', () => {
+            const status = this.rerouted ? 'Rerouted' : (this.currentSpeed > 0 ? 'On Time' : 'Delayed');
+            const content = `
+                <div class="truck-popup" style="padding: 10px; color: #1a1f3a;">
+                    <h3 style="margin: 0 0 5px 0;">Shipment: ${this.shipmentId}</h3>
+                    <p style="margin: 5px 0;"><strong>Status:</strong> ${status}</p>
+                    <p style="margin: 5px 0;"><strong>Priority:</strong> ${this.priority.toUpperCase()}</p>
+                    <p style="margin: 5px 0;"><strong>Speed:</strong> ${this.currentSpeed} km/h</p>
+                    <p style="margin: 5px 0;"><strong>ETA:</strong> ${Math.ceil((this.route.length - this.positionIndex) * 0.5)} mins</p>
+                </div>
+            `;
+            this.infoWindow.setContent(content);
+            this.infoWindow.open(this.map, this.marker);
         });
     }
 
     /**
-     * Calculates bearing between two lat/lng coordinates
-     * @returns {number} Angle in degrees
+     * Helper to calculate distance in km between two points.
      */
-    calculateBearing(lat1, lng1, lat2, lng2) {
-        const toRad = Math.PI / 180;
-        const toDeg = 180 / Math.PI;
-
-        const rl1 = lat1 * toRad;
-        const rl2 = lat2 * toRad;
-        const dlng = (lng2 - lng1) * toRad;
-
-        const x = Math.sin(dlng) * Math.cos(rl2);
-        const y = Math.cos(rl1) * Math.sin(rl2) - Math.sin(rl1) * Math.cos(rl2) * Math.cos(dlng);
-        
-        let bearing = Math.atan2(x, y) * toDeg;
-        bearing = (bearing + 360) % 360;
-        return bearing;
+    haversineDistance(pt1, pt2) {
+        const R = 6371; // Earth radius in km
+        const dLat = (pt2.lat - pt1.lat) * Math.PI / 180;
+        const dLon = (pt2.lng - pt1.lng) * Math.PI / 180;
+        const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                  Math.cos(pt1.lat * Math.PI / 180) * Math.cos(pt2.lat * Math.PI / 180) *
+                  Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
     }
 
     /**
-     * Starts the movement timeline with smooth interpolation between points.
+     * Updates the fading trail behind the truck.
+     */
+    updateTrail(newPos) {
+        this.trail.push(newPos);
+        if (this.trail.length > 10) this.trail.shift(); // Keep last 10 positions
+
+        if (this.trailLine) this.trailLine.setMap(null);
+
+        this.trailLine = new google.maps.Polyline({
+            path: this.trail,
+            strokeColor: '#FFD60A',
+            strokeOpacity: 0.6,
+            strokeWeight: 4,
+            map: this.map
+        });
+    }
+
+    /**
+     * Starts the movement timeline with smooth interpolation.
      */
     startMoving() {
         let frame = 0;
-        const totalFrames = 20;
+        const totalFrames = 20; // 20 intermediate points as requested
 
         const tick = () => {
             if (!this.active) return;
-            
             if (window.isPaused) {
                 this.interval = setTimeout(tick, 100);
                 return;
@@ -107,25 +146,18 @@ class Truck {
                 const startPoint = this.route[this.positionIndex];
                 const endPoint = this.route[this.positionIndex + 1];
                 
-                // Calculate fractional progress and interpolate coordinates
                 const progress = frame / totalFrames;
                 const currentLat = startPoint.lat + (endPoint.lat - startPoint.lat) * progress;
                 const currentLng = startPoint.lng + (endPoint.lng - startPoint.lng) * progress;
                 const currentPos = { lat: currentLat, lng: currentLng };
                 
-                // Update marker position
+                // Update marker
                 this.marker.setPosition(currentPos);
-                
-                // Calculate rotation (bearing) and update icon
-                if (frame === 0 || frame === 1) {
-                    const bearing = this.calculateBearing(startPoint.lat, startPoint.lng, endPoint.lat, endPoint.lng);
-                    const icon = this.marker.getIcon();
-                    // Update rotation property in the icon object
-                    this.marker.setIcon({
-                        ...icon,
-                        rotation: bearing
-                    });
-                }
+                this.updateTrail(currentPos);
+
+                // Speed calculation: distance in 100ms interval
+                const dist = this.haversineDistance(startPoint, endPoint) / totalFrames;
+                this.currentSpeed = Math.floor(dist * 10 * 3600 * (window.playbackSpeed || 1));
                 
                 frame++;
                 
@@ -133,15 +165,13 @@ class Truck {
                     frame = 0;
                     this.positionIndex++;
                     
-                    // Hook to notify map or main logic that truck has reached next node
                     if (window.onTruckMove) {
                         window.onTruckMove(this.shipmentId, this.positionIndex, this.route[this.positionIndex]);
                     }
                 }
             } else {
-                // Route complete
                 this.stop();
-                return; // Prevent further ticks
+                return;
             }
             
             const speed = window.playbackSpeed || 1;
@@ -151,35 +181,24 @@ class Truck {
         this.interval = setTimeout(tick, 100);
     }
 
-    /**
-     * Aborts the current path and begins a new route.
-     * @param {Array} newRoute - Array of LatLng literals
-     */
     changeRoute(newRoute) {
         this.route = newRoute;
         this.rerouted = true;
-        this.positionIndex = 0; 
+        this.positionIndex = 0;
     }
 
-    /**
-     * Halts movement cleanly by cancelling the interval ticker.
-     */
     stop() {
-        if (this.interval) {
-            clearInterval(this.interval);
-        }
+        if (this.interval) clearTimeout(this.interval);
         this.active = false;
+        // Keep trail but stop label
+        this.marker.setLabel(null);
     }
 
-    /**
-     * Evaluates route progression mathematically.
-     * @returns {number} Percentage complete [0.0 - 100.0]
-     */
     getProgress() {
         if (!this.route || this.route.length === 0) return 0;
         return (this.positionIndex / this.route.length) * 100;
     }
 }
 
-// Export class to window
 window.Truck = Truck;
+

@@ -17,12 +17,26 @@ from logic.bottleneck_detector import BottleneckDetector
 from logic.insight_generator import InsightGenerator
 from logic.environmental_monitor import EnvironmentalMonitor
 
-# Load environment variables
-load_dotenv()
+# Load environment variables explicitly from the same directory as app.py
+env_path = os.path.join(os.path.dirname(__file__), '.env')
+load_dotenv(env_path)
 
 app = Flask(__name__)
-# Enable CORS for all routes
-CORS(app)
+
+# Production configuration
+if os.getenv('FLASK_ENV') == 'production':
+    app.config['DEBUG'] = False
+else:
+    app.config['DEBUG'] = True
+
+# Enable CORS with production configuration
+CORS(app, resources={
+    r"/api/*": {
+        "origins": "*",  # In production, replace with your domain
+        "methods": ["GET", "POST", "OPTIONS"],
+        "allow_headers": ["Content-Type"]
+    }
+})
 # Set secret key from environment or use a default
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'default-secret-key')
 
@@ -85,7 +99,8 @@ except Exception as e:
 @app.route('/')
 def index():
     """Render the main index.html page, passing the Google Maps API key from environment."""
-    return render_template('index.html', google_maps_key=os.getenv('GOOGLE_MAPS_API_KEY'))
+    api_key = os.environ.get('GOOGLE_MAPS_API_KEY')
+    return render_template('index.html', google_maps_key=api_key)
 
 
 @app.route('/api/disruptions')
@@ -125,6 +140,31 @@ def get_shipments():
 def get_weather():
     """Return weather events."""
     return jsonify(WEATHER)
+
+@app.route('/api/risks')
+def get_risks():
+    """Get risk zones, following the format expected by the frontend (data.risks)."""
+    mode = request.args.get('mode', 'demo')
+    time_val = int(request.args.get('time', 0))
+    
+    updated_risks = []
+    for disruption in DISRUPTIONS:
+        d = dict(disruption)
+        # Calculate dynamic risk based on time simulation
+        current_base_risk = d.get('delayRisk', 0.0)
+        growth_factor = d.get('growthFactor', 0.0)
+        current_risk = predictor.predict_future_risk(current_base_risk, growth_factor, time_val)
+        
+        d['currentRisk'] = current_risk
+        d['riskLevel'] = risk_engine.get_risk_level(current_risk)
+        d['confidence'] = risk_engine.get_confidence(d)
+        updated_risks.append(d)
+        
+    return jsonify({
+        'risks': updated_risks,
+        'mode': mode,
+        'weather': WEATHER if mode == 'realtime' else []
+    })
 
 
 @app.route('/api/realtime-risks')
@@ -361,10 +401,9 @@ def get_cascade_prediction():
     })
 
 
-@app.route('/api/health')
+@app.route('/health')
 def health_check():
-    """Return health status of the API system."""
-    return jsonify({'status': 'ok', 'system': 'operational'})
+    return jsonify({'status': 'healthy', 'service': 'Supply Chain Shield'}), 200
 
 @app.route('/api/agent-activity')
 def get_agent_activity():
@@ -492,4 +531,6 @@ def get_autonomous_history():
     })
 
 if __name__ == '__main__':
-    app.run(debug=True, port=5001, host='0.0.0.0')
+    import os
+    port = int(os.environ.get('PORT', 8080))
+    app.run(host='0.0.0.0', port=port)

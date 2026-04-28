@@ -1,8 +1,11 @@
 flask==3.0.0
 flask-cors==4.0.0
 python-dotenv==1.0.0
-geopy==2.4.1
-google-generativeai==0.4.10
-earthengine-api==0.1.390
+geopy==2.4.0
 requests==2.31.0
 python-dateutil==2.8.2
+gunicorn==21.2.0
+google-genai
+earthengine-api
+google-auth
+google-api-core

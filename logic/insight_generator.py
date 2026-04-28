@@ -1,18 +1,23 @@
-import google.generativeai as genai
+from google import genai
 import os
 
 class InsightGenerator:
     """
-    Intelligence layer that uses Google Gemini LLM to generate natural language 
-    insights and strategic summaries from raw supply chain data.
+    Intelligence layer that uses the modern Google Gemini SDK (google-genai) 
+    to generate natural language insights and strategic summaries from raw 
+    supply chain data.
     """
     def __init__(self):
-        # Configure the Generative AI library with the API key from environment
+        # Initialize the new Google GenAI client
         api_key = os.getenv('GEMINI_API_KEY')
         if api_key:
-            genai.configure(api_key=api_key)
-            self.model = genai.GenerativeModel('gemini-pro')
-            self.active = True
+            try:
+                self.client = genai.Client(api_key=api_key)
+                self.model_id = 'gemini-2.0-flash'
+                self.active = True
+            except Exception as e:
+                print(f"Error initializing Gemini Client: {e}")
+                self.active = False
         else:
             self.active = False
             print("Warning: GEMINI_API_KEY not found. LLM insights will use fallbacks.")
@@ -47,10 +52,19 @@ class InsightGenerator:
         """
         
         try:
-            response = self.model.generate_content(prompt)
-            return response.text.strip()
+            # Using the exact model string required by the v1 API
+            response = self.client.models.generate_content(
+                model='gemini-2.0-flash',
+                contents=prompt
+            )
+            if response and hasattr(response, 'text'):
+                return response.text.strip()
+            return self._fallback_route_insight(route_data)
         except Exception as e:
-            print(f"Gemini API Error: {e}")
+            if "101" in str(e) or "Network" in str(e):
+                print(f"Gemini Connectivity Error: Please check Docker network settings. {e}")
+            else:
+                print(f"Gemini API Error: {e}")
             return self._fallback_route_insight(route_data)
     
     def generate_disruption_summary(self, disruptions):
@@ -76,8 +90,13 @@ class InsightGenerator:
         """
         
         try:
-            response = self.model.generate_content(prompt)
-            return response.text.strip()
+            response = self.client.models.generate_content(
+                model='gemini-2.0-flash',
+                contents=prompt
+            )
+            if response and hasattr(response, 'text'):
+                return response.text.strip()
+            return f"Strategic analysis unavailable. Detected {len(disruptions)} disruptions."
         except Exception as e:
             print(f"Gemini API Error: {e}")
             return f"Strategic analysis unavailable. Detected {len(disruptions)} disruptions affecting throughput."
